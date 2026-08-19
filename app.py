@@ -1,65 +1,73 @@
 import streamlit as st
 import pandas as pd
 
-# Configuración de la página web
+# Configurar la página web
 st.set_page_config(
     page_title="Consulta de Catálogo",
     page_icon="📦",
     layout="wide"
 )
 
-# Estilo personalizado para agrandar fuentes y botones para adultos mayores
+# Personalización visual: textos grandes y claros para adultos mayores
 st.markdown("""
     <style>
-    .stApp { font-size: 20px; }
-    button { height: 3em !important; font-size: 20px !important; }
-    div[data-baseweb="select"] { font-size: 20px !important; }
+    html, body, [class*="css"]  {
+        font-size: 22px !important;
+    }
+    .stMultiSelect div {
+        font-size: 18px !important;
+    }
+    input {
+        font-size: 20px !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("📦 Consulta de Catálogo Fácil")
-st.write("Seleccione la información que desea consultar de la lista a continuación:")
 
-# --- PEGA AQUÍ TU ENLACE DE GOOGLE SHEETS ---
-# Importante: Cambia la parte final del enlace de '/edit?usp=sharing' a '/export?format=csv'
-URL_SHEETS = "https://docs.google.com/spreadsheets/d/1ahKLQPpoE5fKKBIq_C3g6hqYy-u2AG0r/edit?usp=sharing&ouid=104266924348859001274&rtpof=true&sd=true"
+# --- REEMPLAZA SOLO ESTE ID POR EL DE TU ARCHIVO DE GOOGLE DRIVE ---
+ID_ARCHIVO_DRIVE = "1ahKLQPpoE5fKKBIq_C3g6hqYy-u2AG0r"
 
-@st.cache_data(ttl=60)  # Actualiza los datos cada 60 segundos
+# Construye el enlace de descarga directa del Excel desde Drive
+URL_DESCARGA_EXCEL = f"https://docs.google.com/uc?export=download&id={ID_ARCHIVO_DRIVE}"
+
+# Lee el Excel y refresca la información automáticamente
+@st.cache_data(ttl=60)  # Revisa cambios en el archivo cada 60 segundos
 def cargar_datos(url):
     try:
-        return pd.read_csv(url)
+        return pd.read_excel(url, engine="openpyxl")
     except Exception as e:
+        st.error(f"Error al leer el archivo Excel: {e}")
         return None
 
-df = cargar_datos(URL_SHEETS)
+df = cargar_datos(URL_DESCARGA_EXCEL)
 
-if df is not None:
-    # 1. Selección de columnas
+if df is not None and not df.empty:
     columnas_disponibles = list(df.columns)
-    
-    st.subheader("1. Elija qué datos quiere ver:")
+
+    st.markdown("### 1. Seleccione qué datos desea ver:")
     columnas_seleccionadas = st.multiselect(
-        "Marque o desmarque las opciones:",
+        "Marque o desmarque las columnas que quiera mostrar:",
         options=columnas_disponibles,
         default=columnas_disponibles
     )
 
-    # 2. Buscador opcional simple
-    st.subheader("2. Buscar un producto (Opcional):")
-    busqueda = st.text_input("Escriba el nombre o palabra clave a buscar:", "")
+    st.markdown("### 2. Buscar un producto (Opcional):")
+    busqueda = st.text_input("Escriba lo que desea buscar (ej. artista, título, código):", "")
 
-    # Aplicar filtros
     if columnas_seleccionadas:
         df_filtrado = df[columnas_seleccionadas]
-        
+
         if busqueda:
-            # Filtra en todas las columnas seleccionadas
-            mascara = df_filtrado.astype(str).apply(lambda x: x.str.contains(busqueda, case=False)).any(axis=1)
+            mascara = df_filtrado.astype(str).apply(
+                lambda col: col.str.contains(busqueda, case=False, na=False)
+            ).any(axis=1)
             df_filtrado = df_filtrado[mascara]
 
-        st.subheader("3. Resultado del Catálogo:")
-        st.dataframe(df_filtrado, use_container_width=True, height=400)
+        st.markdown("### 3. Resultado del Catálogo:")
+        st.dataframe(df_filtrado, use_container_width=True, height=500)
     else:
         st.warning("Por favor, seleccione al menos una columna para mostrar.")
 else:
+    st.info("Cargando el catálogo o verificando acceso al archivo...")
     st.error("No se pudo cargar el catálogo. Verifique el enlace de Google Sheets.")

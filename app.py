@@ -28,8 +28,8 @@ st.title("📦 Consulta de Catálogo Fácil")
 # --- REEMPLAZA SOLO ESTE ID POR EL DE TU ARCHIVO DE GOOGLE DRIVE ---
 ID_ARCHIVO_DRIVE = "1ahKLQPpoE5fKKBIq_C3g6hqYy-u2AG0r"
 
-# Construye el enlace de descarga directa del Excel desde Drive
-URL_DESCARGA_EXCEL = f"https://docs.google.com/uc?export=download&id={ID_ARCHIVO_DRIVE}"
+# Enlace directo de exportación directa a formato Excel
+URL_DESCARGA_EXCEL = f"https://docs.google.com/spreadsheets/d/{ID_ARCHIVO_DRIVE}/export?format=xlsx"
 
 # Lee el Excel y refresca la información automáticamente
 @st.cache_data(ttl=60)  # Revisa cambios en el archivo cada 60 segundos
